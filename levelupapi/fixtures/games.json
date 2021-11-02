@@ -1,0 +1,26 @@
+[
+    {
+        "model": "levelupapi.game",
+        "pk": 1,
+        "fields": {
+            "game_type": 2,
+            "title": "Hello World",
+            "maker": "Hasbro",
+            "gamer": 1,
+            "number_of_players": 1,
+            "skill_level": 1
+        }
+    },
+    {
+        "model": "levelupapi.game",
+        "pk": 2,
+        "fields": {
+            "game_type": 1,
+            "title": "Monopoly",
+            "maker": "Hasbro",
+            "gamer": 1,
+            "number_of_players": 1,
+            "skill_level": 1
+        }
+    }
+]

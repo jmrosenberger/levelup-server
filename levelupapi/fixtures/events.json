@@ -1,0 +1,24 @@
+[
+    {
+        "model": "levelupapi.event",
+        "pk": 1,
+        "fields": {
+            "game": 1,
+            "description": "1 player, still had fun!",
+            "date": "2021-11-01",
+            "time": "4:00pm",
+            "organizer": 1
+        }
+    },
+    {
+        "model": "levelupapi.event",
+        "pk": 2,
+        "fields": {
+            "game": 2,
+            "description": "1 player, kind of pointless...",
+            "date": "2021-11-01",
+            "time": "5:00pm",
+            "organizer": 1
+        }
+    }
+]
