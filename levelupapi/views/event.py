@@ -6,7 +6,7 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import serializers
 from rest_framework import status
-from levelupapi.models import Event, EventGamer, Gamer
+from levelupapi.models import Event, Game, Gamer
 
 
 class EventView(ViewSet):
@@ -25,7 +25,8 @@ class EventView(ViewSet):
         # Use the Django ORM to get the record from the database
         # whose `id` is what the client passed as the
         # `gameTypeId` in the body of the request.
-        # game_type = GameType.objects.get(pk=request.data["gameTypeId"])
+
+        game = Game.objects.get(pk=request.data["gameId"])
 
         # Try to save the new game to the database, then
         # serialize the game instance as JSON, and send the
@@ -35,11 +36,11 @@ class EventView(ViewSet):
             # and set its properties from what was sent in the
             # body of the request from the client.
             event = Event.objects.create(
-                game=request.data["game"],
                 description=request.data["description"],
                 date = request.data["date"],
                 time = request.data["time"],
-                organizer = gamer
+                organizer = gamer,
+                game = game
             )
             serializer = EventSerializer(event, context={'request': request})
             return Response(serializer.data)
@@ -77,19 +78,18 @@ class EventView(ViewSet):
             Response -- Empty body with 204 status code
         """
         gamer = Gamer.objects.get(user=request.auth.user)
+        game = Game.objects.get(pk=request.data["gameId"])
 
         # Do mostly the same thing as POST, but instead of
         # creating a new instance of Game, get the game record
         # from the database whose primary key is `pk`
         event = Event.objects.get(pk=pk)
-        event.game = request.data["game"]
         event.description = request.data["description"]
         event.date = request.data["date"]
         event.time = request.data["time"]
         event.organizer = gamer
+        event.game = game
 
-        event_gamer = EventGamer.objects.get(pk=request.data["eventGamerId"])
-        event.game = event_gamer
         event.save()
 
         # 204 status code means everything worked but the
@@ -103,8 +103,8 @@ class EventView(ViewSet):
             Response -- 200, 404, or 500 status code
         """
         try:
-            game = Event.objects.get(pk=pk)
-            game.delete()
+            event = Event.objects.get(pk=pk)
+            event.delete()
 
             return Response({}, status=status.HTTP_204_NO_CONTENT)
 
@@ -121,6 +121,8 @@ class EventView(ViewSet):
             Response -- JSON serialized list of games
         """
         # Get all game records from the database
+        gamer = Gamer.objects.get(user=request.auth.user)
+        game = self.request.query_params.get('gameId', None)
         events = Event.objects.all()
 
         # Support filtering games by type
