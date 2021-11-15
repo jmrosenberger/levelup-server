@@ -6,7 +6,11 @@ from rest_framework.viewsets import ViewSet
 from rest_framework.response import Response
 from rest_framework import serializers
 from rest_framework import status
-from levelupapi.models import Event, Game, Gamer
+from levelupapi.models import Event
+from levelupapi.models.game import Game
+from levelupapi.models.gamer import Gamer
+from django.contrib.auth import get_user_model
+from rest_framework.decorators import action
 
 
 class EventView(ViewSet):
@@ -37,10 +41,10 @@ class EventView(ViewSet):
             # body of the request from the client.
             event = Event.objects.create(
                 description=request.data["description"],
-                date = request.data["date"],
-                time = request.data["time"],
-                organizer = gamer,
-                game = game
+                date=request.data["date"],
+                time=request.data["time"],
+                organizer=gamer,
+                game=game
             )
             serializer = EventSerializer(event, context={'request': request})
             return Response(serializer.data)
@@ -50,8 +54,6 @@ class EventView(ViewSet):
         # client that something was wrong with its request data
         except ValidationError as ex:
             return Response({"reason": ex.message}, status=status.HTTP_400_BAD_REQUEST)
-
-
 
     def retrieve(self, request, pk=None):
         """Handle GET requests for single game
@@ -137,6 +139,57 @@ class EventView(ViewSet):
             events, many=True, context={'request': request})
         return Response(serializer.data)
 
+    @action(methods=['post', 'delete'], detail=True)
+    def signup(self, request, pk=None):
+        """Managing gamers signing up for events"""
+        # Django uses the `Authorization` header to determine
+        # which user is making the request to sign up
+        gamer = Gamer.objects.get(user=request.auth.user)
+
+        try:
+            # Handle the case if the client specifies a game
+            # that doesn't exist
+            event = Event.objects.get(pk=pk)
+        except Event.DoesNotExist:
+            return Response(
+                {'message': 'Event does not exist.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # A gamer wants to sign up for an event
+        if request.method == "POST":
+            try:
+                # Using the attendees field on the event makes it simple to add a gamer to the event
+                # .add(gamer) will insert into the join table a new row the gamer_id and the event_id
+                event.attendees.add(gamer)
+                return Response({}, status=status.HTTP_201_CREATED)
+            except Exception as ex:
+                return Response({'message': ex.args[0]})
+
+        # User wants to leave a previously joined event
+        elif request.method == "DELETE":
+            try:
+                # The many to many relationship has a .remove method that removes the gamer from the attendees list
+                # The method deletes the row in the join table that has the gamer_id and event_id
+                event.attendees.remove(gamer)
+                return Response(None, status=status.HTTP_204_NO_CONTENT)
+            except Exception as ex:
+                return Response({'message': ex.args[0]})
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = get_user_model()
+        fields = ['first_name', 'last_name', 'username']
+
+
+class GamerSerializer(serializers.ModelSerializer):
+    user = UserSerializer(many=False)
+
+    class Meta:
+        model = Gamer
+        fields = ['user']
+
 
 class EventSerializer(serializers.ModelSerializer):
     """JSON serializer for games
@@ -144,6 +197,8 @@ class EventSerializer(serializers.ModelSerializer):
     Arguments:
         serializer type
     """
+    organizer = GamerSerializer(many=False)
+
     class Meta:
         model = Event
         fields = ('id', 'game', 'description', 'date', 'time', 'organizer')
