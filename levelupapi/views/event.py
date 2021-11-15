@@ -12,6 +12,8 @@ from levelupapi.models.gamer import Gamer
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import action
 
+from levelupapi.views.game import GameSerializer
+
 
 class EventView(ViewSet):
     """Level up games"""
@@ -115,29 +117,32 @@ class EventView(ViewSet):
 
         except Exception as ex:
             return Response({'message': ex.args[0]}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
 
     def list(self, request):
-        """Handle GET requests to games resource
+        """Handle GET requests to events resource
 
         Returns:
-            Response -- JSON serialized list of games
+            Response -- JSON serialized list of events
         """
-        # Get all game records from the database
+        # Get the current authenticated user
         gamer = Gamer.objects.get(user=request.auth.user)
-        game = self.request.query_params.get('gameId', None)
         events = Event.objects.all()
 
-        # Support filtering games by type
-        #    http://localhost:8000/games?type=1
-        #
-        # That URL will retrieve all tabletop games
-        event = self.request.query_params.get('type', None)
-        if event is not None:
-            events = events.filter(event__id=event)
+        # Set the `joined` property on every event
+        for event in events:
+            # Check to see if the gamer is in the attendees list on the event
+            event.joined = gamer in event.attendees.all()
+
+        # Support filtering events by game
+        game = self.request.query_params.get('gameId', None)
+        if game is not None:
+            events = events.filter(game__id=type)
 
         serializer = EventSerializer(
             events, many=True, context={'request': request})
         return Response(serializer.data)
+
 
     @action(methods=['post', 'delete'], detail=True)
     def signup(self, request, pk=None):
@@ -198,8 +203,11 @@ class EventSerializer(serializers.ModelSerializer):
         serializer type
     """
     organizer = GamerSerializer(many=False)
+    joined = serializers.BooleanField(required=False)
+    game = GameSerializer()
+    attending_count = serializers.IntegerField(default=None)
 
     class Meta:
         model = Event
-        fields = ('id', 'game', 'description', 'date', 'time', 'organizer')
+        fields = ('id', 'game', 'organizer', 'description', 'date', 'time', 'attendees', 'joined', 'attending_count')
         depth = 1
