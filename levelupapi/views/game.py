@@ -43,7 +43,7 @@ class GameView(ViewSet):
                 game_type=game_type
             )
             serializer = GameSerializer(game, context={'request': request})
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         # If anything went wrong, catch the exception and
         # send a response with a 400 status code to tell the
@@ -122,6 +122,7 @@ class GameView(ViewSet):
             Response -- JSON serialized list of games
         """
         # Get all game records from the database
+        gamer = Gamer.objects.get(user=request.auth.user)
         games = Game.objects.all()
 
         # Support filtering games by type
