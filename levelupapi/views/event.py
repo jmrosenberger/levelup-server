@@ -49,7 +49,7 @@ class EventView(ViewSet):
                 game=game
             )
             serializer = EventSerializer(event, context={'request': request})
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         # If anything went wrong, catch the exception and
         # send a response with a 400 status code to tell the
@@ -71,7 +71,7 @@ class EventView(ViewSet):
             # The `2` at the end of the route becomes `pk`
             event = Event.objects.get(pk=pk)
             serializer = EventSerializer(event, context={'request': request})
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as ex:
             return HttpResponseServerError(ex)
 
@@ -101,7 +101,7 @@ class EventView(ViewSet):
         return Response({}, status=status.HTTP_204_NO_CONTENT)
 
     def destroy(self, request, pk=None):
-        """Handle DELETE requests for a single game
+        """Handle DELETE requests for a single event
 
         Returns:
             Response -- 200, 404, or 500 status code
