@@ -1,3 +1,4 @@
+
 """levelup URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -16,16 +17,19 @@ Including another URLconf
 from django.contrib import admin
 from django.conf.urls import include
 from django.urls import path
-from levelupapi.views import register_user, login_user
+from levelupapi.views.auth import register_user, login_user
 from rest_framework import routers
-from levelupapi.views import GameTypeView, GameView, EventView
+from levelupapi.views.game_type import GameTypeView
+from levelupapi.views.game import GameView
+from levelupapi.views.event import EventView
+from levelupapi.views.profile import user_profile
 
 
 router = routers.DefaultRouter(trailing_slash=False)
 router.register(r'gametypes', GameTypeView, 'gametype')
 router.register(r'games', GameView, 'game')
-# router.register(r'game', GameView, 'game')
 router.register(r'events', EventView, 'event')
+# router.register(r'profile', user_profile, 'profile')
 
 
 
@@ -35,5 +39,6 @@ urlpatterns = [
     path('login', login_user),
     path('api-auth', include('rest_framework.urls', namespace='rest_framework')),
     path('admin/', admin.site.urls),
+    path('profile', user_profile)
 ]
                    
