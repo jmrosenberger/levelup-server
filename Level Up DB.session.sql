@@ -12,4 +12,9 @@ JOIN levelupapi_event AS Ev
     ON Ev.id = E.Event_id
 JOIN levelupapi_game AS Ga
     ON Ev.game_id = Ga.id
-GROUP BY e.event_id
+GROUP BY e.event_id;
+
+
+SELECT * 
+FROM levelupapi_game AS game
+WHERE game.id = 26
